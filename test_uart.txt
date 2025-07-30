@@ -1,0 +1,74 @@
+# Test valid DID (0x1122)
+printf '\x03\x22\x11\x22' > /dev/ttyUSB0
+
+# Test invalid length (too short)
+printf '\x02\x22\x11' > /dev/ttyUSB0
+
+# Test invalid length (too long)  
+printf '\x04\x22\x11\x22\x55' > /dev/ttyUSB0
+
+# Test invalid DID (0x3344)
+printf '\x03\x22\x33\x44' > /dev/ttyUSB0
+
+
+# Step 1: Request Seed (sub-function 0x01)
+printf '\x02\x27\x01' > /dev/ttyUSB0
+
+# Step 2: Send Key (single frame - will fail due to length)
+printf '\x08\x27\x02\x09\x8A\xA3\x22\xA0\x0D' > /dev/ttyUSB0
+
+# Test invalid seed request length
+printf '\x03\x27\x01\x55' > /dev/ttyUSB0
+
+# Test invalid sub-function
+printf '\x02\x27\x05' > /dev/ttyUSB0
+
+
+# Step 1: Request Seed first (single frame)
+printf '\x02\x27\x01' > /dev/ttyUSB0
+
+# Step 2: Send Key using multi-frame (First Frame)
+printf '\x10\x08\x27\x02\x09\x8A\xA3\x22' > /dev/ttyUSB0
+
+# Wait for Flow Control response: 30 00 10 55 55 55 55 55
+
+# Step 3: Send Consecutive Frame
+printf '\x21\xA0\x0D\x55\x55\x55\x55\x55' > /dev/ttyUSB0
+
+# Test wrong key (multi-frame)
+printf '\x02\x27\x01' > /dev/ttyUSB0  # Request seed first
+printf '\x10\x08\x27\x02\x00\x00\x00\x00' > /dev/ttyUSB0  # Wrong key FF
+printf '\x21\x00\x00\x55\x55\x55\x55\x55' > /dev/ttyUSB0  # Wrong key CF
+
+
+# Test without security access (should fail)
+printf '\x05\x2E\x11\x22\x01\x23' > /dev/ttyUSB0
+
+# Test after security access (first unlock security)
+printf '\x02\x27\x01' > /dev/ttyUSB0  # Request seed
+printf '\x10\x08\x27\x02\x09\x8A\xA3\x22' > /dev/ttyUSB0  # Send key FF
+printf '\x21\xA0\x0D\x55\x55\x55\x55\x55' > /dev/ttyUSB0  # Send key CF
+# Now write data
+printf '\x05\x2E\x11\x22\x01\x23' > /dev/ttyUSB0
+
+# Test invalid DID after unlock
+printf '\x05\x2E\x33\x44\x01\x23' > /dev/ttyUSB0
+
+# Test invalid length after unlock
+printf '\x04\x2E\x11\x22\x01' > /dev/ttyUSB0
+
+
+
+
+
+
+# Complete successful flow
+printf '\x02\x27\x01' > /dev/ttyUSB0                      # Request seed
+sleep 1
+printf '\x10\x08\x27\x02\x09\x8A\xA3\x22' > /dev/ttyUSB0  # Send key FF
+sleep 1
+printf '\x21\xA0\x0D\x55\x55\x55\x55\x55' > /dev/ttyUSB0  # Send key CF
+sleep 1
+printf '\x05\x2E\x11\x22\x01\x23' > /dev/ttyUSB0          # Write data
+sleep 1
+printf '\x03\x22\x11\x22' > /dev/ttyUSB0                  # Read data

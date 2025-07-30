@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename resource &apos;BEA_CAN2CAN_DEMO_TEN1HC_HUST&apos; to &apos;BEA_HUST_2025&apos;" description="Rename resource &apos;BEA_CAN2CAN_DEMO_TEN1HC_HUST&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="/BEA_CAN2CAN_DEMO_TEN1HC_HUST" name="BEA_HUST_2025" stamp="1753873869540" updateReferences="true"/>
+</session>

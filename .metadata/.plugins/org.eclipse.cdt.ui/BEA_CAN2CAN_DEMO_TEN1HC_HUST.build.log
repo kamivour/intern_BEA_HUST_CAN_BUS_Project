@@ -1,0 +1,31 @@
+18:00:37 **** Incremental Build of configuration Debug for project BEA_CAN2CAN_DEMO_TEN1HC_HUST ****
+make -j12 all 
+arm-none-eabi-gcc "../Core/Src/dcm.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F405xx -c -I../Core/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/dcm.d" -MT"Core/Src/dcm.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/dcm.o"
+arm-none-eabi-gcc "../Core/Src/dcm_rdbi.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F405xx -c -I../Core/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/dcm_rdbi.d" -MT"Core/Src/dcm_rdbi.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/dcm_rdbi.o"
+arm-none-eabi-gcc "../Core/Src/dcm_seca.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F405xx -c -I../Core/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/dcm_seca.d" -MT"Core/Src/dcm_seca.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/dcm_seca.o"
+arm-none-eabi-gcc "../Core/Src/dcm_wdbi.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F405xx -c -I../Core/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/dcm_wdbi.d" -MT"Core/Src/dcm_wdbi.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/dcm_wdbi.o"
+arm-none-eabi-gcc "../Core/Src/iso_tp.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F405xx -c -I../Core/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/iso_tp.d" -MT"Core/Src/iso_tp.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/iso_tp.o"
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F405xx -c -I../Core/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc "../Core/Src/stm32f4xx_it.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F405xx -c -I../Core/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/stm32f4xx_it.d" -MT"Core/Src/stm32f4xx_it.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/stm32f4xx_it.o"
+../Core/Src/dcm.c: In function 'DCM_ProcessRequest':
+../Core/Src/dcm.c:30:13: warning: variable 'data_len' set but not used [-Wunused-but-set-variable]
+   30 |     uint8_t data_len;
+      |             ^~~~~~~~
+arm-none-eabi-gcc -o "BEA_CAN2CAN_DEMO_TEN1HC_HUST.elf" @"objects.list"   -mcpu=cortex-m4 -T"/home/edabk/_kamivour/Code/bosch_bea/BOSCH_PRATCICE_UDS/BEA_CAN2CAN_DEMO_TEN1HC_HUST/STM32F405RGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="BEA_CAN2CAN_DEMO_TEN1HC_HUST.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+/opt/st/stm32cubeide_1.19.0/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.linux64_1.0.0.202410170706/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld: warning: BEA_CAN2CAN_DEMO_TEN1HC_HUST.elf has a LOAD segment with RWX permissions
+Finished building target: BEA_CAN2CAN_DEMO_TEN1HC_HUST.elf
+ 
+arm-none-eabi-size  BEA_CAN2CAN_DEMO_TEN1HC_HUST.elf 
+arm-none-eabi-objdump -h -S BEA_CAN2CAN_DEMO_TEN1HC_HUST.elf  > "BEA_CAN2CAN_DEMO_TEN1HC_HUST.list"
+arm-none-eabi-objcopy  -O ihex BEA_CAN2CAN_DEMO_TEN1HC_HUST.elf  "BEA_CAN2CAN_DEMO_TEN1HC_HUST.hex"
+   text	   data	    bss	    dec	    hex	filename
+  25084	    148	  14692	  39924	   9bf4	BEA_CAN2CAN_DEMO_TEN1HC_HUST.elf
+Finished building: default.size.stdout
+ 
+Finished building: BEA_CAN2CAN_DEMO_TEN1HC_HUST.hex
+ 
+Finished building: BEA_CAN2CAN_DEMO_TEN1HC_HUST.list
+ 
+
+18:00:37 Build Finished. 0 errors, 2 warnings. (took 268ms)
+

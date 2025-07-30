@@ -1,0 +1,29 @@
+!SESSION 2025-07-30 15:59:21.354 -----------------------------------------------
+eclipse.buildId=Version 1.19.0
+java.version=21.0.3
+java.vendor=Eclipse Adoptium
+BootLoader constants: OS=linux, ARCH=x86_64, WS=gtk, NL=en_US
+Command-line arguments:  -os linux -ws gtk -arch x86_64
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 4 4 2025-07-30 16:00:08.546
+!MESSAGE CubeMX plugin appears to be active, Log4j initialization might be too late.
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 1 1 2025-07-30 16:00:08.546
+!MESSAGE Log4j2 initialized with config file /home/edabk/_kamivour/Code/bosch_bea/BOSCH_PRATCICE_UDS/.metadata/.log4j2.xml
+
+!ENTRY com.st.stm32cube.ide.mcu.ide 1 1 2025-07-30 16:00:10.368
+!MESSAGE Started RMI Server, listening on port 41337
+
+!ENTRY org.eclipse.cdt.core 1 0 2025-07-30 16:00:37.964
+!MESSAGE Indexed 'BEA_CAN2CAN_DEMO_TEN1HC_HUST' (27 sources, 128 headers) in 1.95 sec: 13,427 declarations; 65,420 references; 1 unresolved inclusions; 92 syntax errors; 240 unresolved names (0.3%)
+
+!ENTRY org.eclipse.cdt.core 1 0 2025-07-30 18:11:09.639
+!MESSAGE Indexed 'BEA_HUST_2025' (0 sources, 0 headers) in 0.001 sec: 0 declarations; 0 references; 0 unresolved inclusions; 0 syntax errors; 0 unresolved names (0%)
+
+!ENTRY org.eclipse.ui.ide 4 4 2025-07-30 18:16:05.960
+!MESSAGE Problems saving workspace
+
+!ENTRY org.eclipse.ui.ide 2 1 2025-07-30 18:16:05.966
+!MESSAGE Problems occurred while trying to save the state of the workbench.
+!SUBENTRY 1 org.eclipse.core.resources 2 234 2025-07-30 18:16:05.966
+!MESSAGE The project description file (.project) for 'BEA_HUST_2025' was missing.  This file contains important information about the project.  A new project description file has been created, but some information about the project may have been lost.
