@@ -171,7 +171,11 @@ int main(void) {
 		
 		// Check if CAN1 received a response (non-Flow Control) for display
 		if (check == 1) {
-			USART3_SendString((uint8_t*) "Response: ");
+			// Check if this is part of a multi-frame response
+			uint8_t pci = CAN1_DATA_RX[0] & 0xF0;
+			if (pci != 0x10 && pci != 0x20) { // Not First Frame or Consecutive Frame
+				USART3_SendString((uint8_t*) "Response: ");
+			}
 			PrintCANLog(CAN1_pHeaderRx.StdId, CAN1_DATA_RX);
 			check = 0;
 		}
@@ -562,7 +566,6 @@ void send_uds_request_via_can1(uint8_t *uds_data, uint16_t length) {
 		
 		sprintf(debug_msg, "Sending First Frame: ");
 		USART3_SendString((uint8_t*) debug_msg);
-		PrintCANLog(CAN1_pHeader.StdId, CAN1_DATA_TX);
 		
 		CAN1_Send();
 		
@@ -587,7 +590,6 @@ void send_uds_request_via_can1(uint8_t *uds_data, uint16_t length) {
 			
 			sprintf(debug_msg, "Sending Consecutive Frame %d: ", sequence_number);
 			USART3_SendString((uint8_t*) debug_msg);
-			PrintCANLog(CAN1_pHeader.StdId, CAN1_DATA_TX);
 			
 			CAN1_Send();
 			
@@ -622,9 +624,12 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 		if (pci == ISO_TP_PCI_FC) {
 			// Process Flow Control from ECU
 			iso_tp_process_rx(CAN1_DATA_RX);
-		} else {
-			// Set flag for main loop to handle response display
+		} else if (pci == ISO_TP_PCI_SF) {
+			// Single Frame - set flag for main loop display
 			check = 1;
+		} else {
+			// Multi-frame (FF or CF) - don't log here since ECU side already logged when sending
+			// Just process silently
 		}
 		return;
 	}

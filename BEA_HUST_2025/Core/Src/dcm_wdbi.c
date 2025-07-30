@@ -5,9 +5,12 @@
 
 #include "dcm_wdbi.h"
 #include "iso_tp.h"
+#include <stdio.h>
 
 // External functions from main.c
 extern void delay(uint16_t delay);
+extern void USART3_SendString(uint8_t *ch);
+extern uint32_t newStdID;
 
 void DCM_WDBI_ProcessRequest(uint8_t *rx_buffer, uint8_t is_single_frame) {
     delay(100);
@@ -46,12 +49,19 @@ void DCM_WDBI_ProcessRequest(uint8_t *rx_buffer, uint8_t is_single_frame) {
         response_data[2] = INVALID_DID_RESPONSE_CODE;
         response_len = 3;
     } else {
-        // Update the Data Identifier with the new written data
-        AVAILABLE_SERVICE = ((((uint16_t) uds_data[3]) << 8) | (uds_data[4])) & 0xFFFF;
-        newStdID = ((((uint32_t) uds_data[3]) << 8) | (uds_data[4])) & 0x7FF;
+        // Store the new tester ID (apply mask 0x7FF)
+        // Format: 2E + Current DID (01 23) + New Tester ID (12 34)
+        uint16_t new_tester_id = ((((uint16_t) uds_data[3]) << 8) | (uds_data[4]));
+        newStdID = new_tester_id & 0x7FF; // Apply 11-bit CAN ID mask
+        
+        // Debug: Show the stored tester ID
+        char debug_msg[100];
+        sprintf(debug_msg, "New Tester ID stored: 0x%03X (will apply after IG cycle)\n", newStdID);
+        USART3_SendString((uint8_t*) debug_msg);
+        
         response_data[0] = uds_data[0] + 0x40; // Positive response (0x6E)
-        response_data[1] = uds_data[3];        // Echo written data high byte
-        response_data[2] = uds_data[4];        // Echo written data low byte
+        response_data[1] = uds_data[1];        // Echo Current DID high byte
+        response_data[2] = uds_data[2];        // Echo Current DID low byte
         response_len = 3;
     }
     

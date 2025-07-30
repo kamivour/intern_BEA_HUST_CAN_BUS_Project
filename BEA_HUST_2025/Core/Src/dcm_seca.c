@@ -60,12 +60,21 @@ void DCM_SECA_ProcessRequest(uint8_t *rx_buffer, uint8_t is_single_frame) {
             response_data[1] = uds_data[0];  // Use original service ID instead of SESSION_SID
             response_data[2] = INVALID_LENGTH_RESPONSE_CODE;
             response_len = 3;
+        } else if (!SeedProvided) {
+            // No seed was provided or seed session was invalidated due to wrong key
+            response_data[0] = NRC;                    // 0x7F
+            response_data[1] = uds_data[0];            // 0x27 (original service ID)
+            response_data[2] = GENERAL_REJECT;         // 0x10
+            response_len = 3;
         } else if (!compare_key(KEY, &uds_data[2], 6)) {
+            // Wrong key provided - invalidate the seed session
             response_data[0] = NRC;                    // 0x7F
             response_data[1] = uds_data[0];            // 0x27 (original service ID)
             response_data[2] = WRONG_KEY_RESPONSE_CODE; // 0x35
             response_len = 3;
-        } else if (SeedProvided && !SecurityUnlocked) {
+            SeedProvided = 0; // Invalidate seed session - tester must request new seed
+        } else if (!SecurityUnlocked) {
+            // Correct key and seed was provided
             HAL_TIM_Base_Start_IT(&htim3);
             SecurityUnlocked = 1;
             HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
@@ -73,9 +82,13 @@ void DCM_SECA_ProcessRequest(uint8_t *rx_buffer, uint8_t is_single_frame) {
             response_data[0] = uds_data[0] + 0x40; // Positive response
             response_data[1] = 0x02;
             response_len = 2;
-            SeedProvided = 0;
+            SeedProvided = 0; // Reset seed session after successful unlock
         } else {
-            return; // Already unlocked or no seed provided
+            // Already unlocked
+            response_data[0] = NRC;                    // 0x7F
+            response_data[1] = uds_data[0];            // 0x27 (original service ID)
+            response_data[2] = GENERAL_REJECT;         // 0x10
+            response_len = 3;
         }
         break;
         

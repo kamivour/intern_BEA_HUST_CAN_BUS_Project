@@ -1,74 +1,64 @@
-# Test valid DID (0x1122)
-printf '\x03\x22\x11\x22' > /dev/ttyUSB0
+# STM32 UDS Security Access Test Commands
+# Use these commands with tio CLI tool to test the CAN bus UDS implementation
 
-# Test invalid length (too short)
-printf '\x02\x22\x11' > /dev/ttyUSB0
+# Test Sequence 1: Normal Security Access
+# 1. Request Seed (Security Access Service 0x27, Sub-function 0x01)
+# Single frame: Should return seed {0x01, 0x08, 0x82, 0x21, 0xAB, 0xCD}
+printf '\x27\x01' > /dev/ttyUSB0
 
-# Test invalid length (too long)  
-printf '\x04\x22\x11\x22\x55' > /dev/ttyUSB0
+# 2. Send Correct Key (Security Access Service 0x27, Sub-function 0x02 + 6 key bytes)
+# Multi-frame: Should unlock security and return positive response {0x67, 0x02}
+# Calculated key for seed {0x01, 0x08, 0x82, 0x21, 0xAB, 0xCD} = {0x09, 0x8A, 0xA3, 0x22, 0xA0, 0x0D}
+printf '\x27\x02\x09\x8A\xA3\x22\xA0\x0D' > /dev/ttyUSB0
 
-# Test invalid DID (0x3344)
-printf '\x03\x22\x33\x44' > /dev/ttyUSB0
+# Test Sequence 2: Wrong Key Invalidation Test
+# 3. Request Seed again
+printf '\x27\x01' > /dev/ttyUSB0
 
+# 4. Send Wrong Key (for testing NRC response and session invalidation)
+# Multi-frame: Should return NRC {0x7F, 0x27, 0x35} (Wrong Key) and invalidate seed session
+printf '\x27\x02\x11\x22\x33\x44\x55\x66' > /dev/ttyUSB0
 
-# Step 1: Request Seed (sub-function 0x01)
-printf '\x02\x27\x01' > /dev/ttyUSB0
+# 5. Try Correct Key without requesting new seed (should fail with GENERAL_REJECT)
+# Multi-frame: Should return NRC {0x7F, 0x27, 0x10} (General Reject)
+printf '\x27\x02\x09\x8A\xA3\x22\xA0\x0D' > /dev/ttyUSB0
 
-# Step 2: Send Key (single frame - will fail due to length)
-printf '\x08\x27\x02\x09\x8A\xA3\x22\xA0\x0D' > /dev/ttyUSB0
+# 6. Request new seed (required after wrong key)
+printf '\x27\x01' > /dev/ttyUSB0
 
-# Test invalid seed request length
-printf '\x03\x27\x01\x55' > /dev/ttyUSB0
+# 7. Send correct key again (should work now)
+printf '\x27\x02\x09\x8A\xA3\x22\xA0\x0D' > /dev/ttyUSB0
 
-# Test invalid sub-function
-printf '\x02\x27\x05' > /dev/ttyUSB0
+# Test Sequence 3: Tester ID Change Test
+# 8. Write new tester ID (Service 0x2E, Current DID 0x0123, New Tester ID 0x1234)
+# Single frame: Should return positive response {0x6E, 0x01, 0x23}
+# New ID will be 0x1234 & 0x7FF = 0x234, stored but not applied yet
+printf '\x2E\x01\x23\x12\x34' > /dev/ttyUSB0
 
+# 9. Test with current ID (should still be 0x712)
+printf '\x27\x01' > /dev/ttyUSB0
 
-# Step 1: Request Seed first (single frame)
-printf '\x02\x27\x01' > /dev/ttyUSB0
+# 10. Press BtnU button (GPIO_PIN_1) to trigger "IG OFF -> IG ON" 
+#     This will apply the new tester ID 0x234
+#     Manual action: Press the button on your board
 
-# Step 2: Send Key using multi-frame (First Frame)
-printf '\x10\x08\x27\x02\x09\x8A\xA3\x22' > /dev/ttyUSB0
+# 11. Test with new ID (should now be 0x234)
+printf '\x27\x01' > /dev/ttyUSB0
 
-# Wait for Flow Control response: 30 00 10 55 55 55 55 55
+# 4. Read Data by Identifier (Service 0x22, DID 0x1234)
+# Single frame: Should return data {0x62, 0x12, 0x34, 0xAA, 0xBB, 0xCC, 0xDD}
+printf '\x22\x12\x34' > /dev/ttyUSB0
 
-# Step 3: Send Consecutive Frame
-printf '\x21\xA0\x0D\x55\x55\x55\x55\x55' > /dev/ttyUSB0
+# 5. Write Data by Identifier (Service 0x2E, Current DID + New DID)
+# Single frame: SID 0x2E + Current DID 0x0123 + New DID 0x1234
+# Should return positive response {0x6E, 0x01, 0x23}
+printf '\x2E\x01\x23\x12\x34' > /dev/ttyUSB0
 
-# Test wrong key (multi-frame)
-printf '\x02\x27\x01' > /dev/ttyUSB0  # Request seed first
-printf '\x10\x08\x27\x02\x00\x00\x00\x00' > /dev/ttyUSB0  # Wrong key FF
-printf '\x21\x00\x00\x55\x55\x55\x55\x55' > /dev/ttyUSB0  # Wrong key CF
+# Expected CAN Traffic:
+# Tester (CAN1, ID 0x712) sends to ECU (CAN2, ID 0x7A2)
+# ECU (CAN2, ID 0x7A2) responds to Tester (CAN1, ID 0x712)
 
-
-# Test without security access (should fail)
-printf '\x05\x2E\x11\x22\x01\x23' > /dev/ttyUSB0
-
-# Test after security access (first unlock security)
-printf '\x02\x27\x01' > /dev/ttyUSB0  # Request seed
-printf '\x10\x08\x27\x02\x09\x8A\xA3\x22' > /dev/ttyUSB0  # Send key FF
-printf '\x21\xA0\x0D\x55\x55\x55\x55\x55' > /dev/ttyUSB0  # Send key CF
-# Now write data
-printf '\x05\x2E\x11\x22\x01\x23' > /dev/ttyUSB0
-
-# Test invalid DID after unlock
-printf '\x05\x2E\x33\x44\x01\x23' > /dev/ttyUSB0
-
-# Test invalid length after unlock
-printf '\x04\x2E\x11\x22\x01' > /dev/ttyUSB0
-
-
-
-
-
-
-# Complete successful flow
-printf '\x02\x27\x01' > /dev/ttyUSB0                      # Request seed
-sleep 1
-printf '\x10\x08\x27\x02\x09\x8A\xA3\x22' > /dev/ttyUSB0  # Send key FF
-sleep 1
-printf '\x21\xA0\x0D\x55\x55\x55\x55\x55' > /dev/ttyUSB0  # Send key CF
-sleep 1
-printf '\x05\x2E\x11\x22\x01\x23' > /dev/ttyUSB0          # Write data
-sleep 1
-printf '\x03\x22\x11\x22' > /dev/ttyUSB0                  # Read data
+# Note: Multi-frame commands will be automatically split into:
+# - First Frame (FF): 10 LL DD DD DD DD DD DD
+# - Flow Control (FC): 30 00 00 (sent by ECU)
+# - Consec
