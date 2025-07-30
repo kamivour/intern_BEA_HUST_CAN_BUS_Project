@@ -2,9 +2,10 @@
 ../Core/Src/iso_tp.c:42:6:iso_tp_timer_update	16	static
 ../Core/Src/iso_tp.c:51:6:iso_tp_start_timer	16	static
 ../Core/Src/iso_tp.c:56:6:iso_tp_handle_timeout	8	static
-../Core/Src/iso_tp.c:69:9:iso_tp_get_data_length	24	static
-../Core/Src/iso_tp.c:83:6:iso_tp_process_rx	24	static
-../Core/Src/iso_tp.c:177:6:iso_tp_send_fc	24	static
-../Core/Src/iso_tp.c:191:6:iso_tp_send_sf	24	static
-../Core/Src/iso_tp.c:206:6:iso_tp_send_ff	16	static
-../Core/Src/iso_tp.c:232:6:iso_tp_send_cf	16	static
+../Core/Src/iso_tp.c:67:9:iso_tp_get_data_length	24	static
+../Core/Src/iso_tp.c:81:6:iso_tp_process_rx	24	static
+../Core/Src/iso_tp.c:170:6:iso_tp_send_fc	24	static
+../Core/Src/iso_tp.c:184:6:iso_tp_send_sf	24	static
+../Core/Src/iso_tp.c:199:6:iso_tp_send_ff	16	static
+../Core/Src/iso_tp.c:225:6:iso_tp_send_cf	16	static
+../Core/Src/iso_tp.c:258:6:iso_tp_send_response_auto	32	static

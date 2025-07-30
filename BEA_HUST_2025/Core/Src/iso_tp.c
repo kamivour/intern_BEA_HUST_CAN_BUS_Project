@@ -54,16 +54,14 @@ void iso_tp_start_timer(uint32_t timeout_ms) {
 }
 
 void iso_tp_handle_timeout(void) {
-    USART3_SendString((uint8_t*) "ISO-TP Timeout\n");
-    
-    // If we were waiting for Flow Control, send the consecutive frame anyway
     if (iso_tp_state == ISO_TP_STATE_WAIT_FC) {
-        USART3_SendString((uint8_t*) "No FC received, sending CF anyway\n");
-        iso_tp_state = ISO_TP_STATE_SENDING_CF;
-        iso_tp_send_cf();
-    } else {
-        iso_tp_init(); // Reset state
+        // N_As timeout: Flow Control not received within timeout
+    } else if (iso_tp_state == ISO_TP_STATE_RECEIVING_CF) {
+        // N_Cr timeout: Consecutive Frame not received within timeout
     }
+    
+    // Always abort and reset to IDLE state on timeout
+    iso_tp_init();
 }
 
 uint8_t iso_tp_get_data_length(uint8_t *buffer, uint16_t *total_len) {
@@ -100,6 +98,7 @@ void iso_tp_process_rx(uint8_t *can_data) {
             
         case ISO_TP_PCI_FF: // First Frame
             data_start_idx = iso_tp_get_data_length(can_data, &iso_tp_rx_len);
+            
             if (iso_tp_rx_len > 7 && iso_tp_rx_len < 4096) {
                 iso_tp_state = ISO_TP_STATE_RECEIVING_FF;
                 iso_tp_rx_index = 0;
@@ -113,8 +112,6 @@ void iso_tp_process_rx(uint8_t *can_data) {
                 // Send Flow Control - Continue to Send
                 iso_tp_send_fc(FC_CTS);
                 iso_tp_start_timer(ISO_TP_TIMEOUT_CF);
-                
-                USART3_SendString((uint8_t*) "ISO-TP: First Frame received\n");
             }
             break;
             
@@ -132,8 +129,6 @@ void iso_tp_process_rx(uint8_t *can_data) {
                     
                     if (iso_tp_rx_index >= iso_tp_rx_len) {
                         // Multi-frame reception complete
-                        USART3_SendString((uint8_t*) "ISO-TP: Multi-frame reception complete\n");
-                        
                         // Copy to REQ_BUFFER for UDS processing
                         memcpy(REQ_BUFFER, iso_tp_rx_buffer, iso_tp_rx_len);
                         
@@ -147,7 +142,6 @@ void iso_tp_process_rx(uint8_t *can_data) {
                     }
                 } else {
                     // Sequence number error
-                    USART3_SendString((uint8_t*) "ISO-TP: Sequence number error\n");
                     iso_tp_init();
                 }
             }
@@ -166,7 +160,6 @@ void iso_tp_process_rx(uint8_t *can_data) {
                     iso_tp_start_timer(ISO_TP_TIMEOUT_FC);
                 } else {
                     // Overflow or error
-                    USART3_SendString((uint8_t*) "ISO-TP: Flow control error\n");
                     iso_tp_init();
                 }
             }
@@ -257,6 +250,57 @@ void iso_tp_send_cf(void) {
             // Transmission complete
             iso_tp_init();
             break;
+        }
+    }
+}
+
+// Special function for ECU responses - sends multi-frame without waiting for FC
+void iso_tp_send_response_auto(uint8_t *data, uint16_t len) {
+    if (len <= 7) {
+        // Single Frame
+        iso_tp_send_sf(data, len);
+    } else {
+        // Multi-Frame - send FF + CF automatically without waiting for FC
+        
+        // Send First Frame
+        CAN2_DATA_TX[0] = ISO_TP_PCI_FF | ((len >> 8) & 0x0F);
+        CAN2_DATA_TX[1] = len & 0xFF;
+        memcpy(&CAN2_DATA_TX[2], data, 6);
+        
+        PrintCANLog(CAN2_pHeader.StdId, CAN2_DATA_TX);
+        
+        if (HAL_CAN_AddTxMessage(&hcan2, &CAN2_pHeader, CAN2_DATA_TX, &CAN2_pTxMailbox) != HAL_OK) {
+            Error_Handler();
+        }
+        delay(50);
+        
+        // Send Consecutive Frames automatically
+        uint16_t sent_bytes = 6;
+        uint8_t sequence_number = 1;
+        
+        while (sent_bytes < len) {
+            uint8_t remaining = len - sent_bytes;
+            uint8_t to_send = (remaining > 7) ? 7 : remaining;
+            
+            CAN2_DATA_TX[0] = ISO_TP_PCI_CF | (sequence_number & 0x0F);
+            memcpy(&CAN2_DATA_TX[1], &data[sent_bytes], to_send);
+            
+            // Pad remaining bytes
+            for (int i = to_send + 1; i < 8; i++) {
+                CAN2_DATA_TX[i] = 0x55;
+            }
+            
+            PrintCANLog(CAN2_pHeader.StdId, CAN2_DATA_TX);
+            
+            if (HAL_CAN_AddTxMessage(&hcan2, &CAN2_pHeader, CAN2_DATA_TX, &CAN2_pTxMailbox) != HAL_OK) {
+                Error_Handler();
+            }
+            
+            sent_bytes += to_send;
+            sequence_number++;
+            if (sequence_number > 15) sequence_number = 0;
+            
+            delay(10); // Small delay between frames
         }
     }
 }

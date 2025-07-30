@@ -39,7 +39,7 @@ void DCM_SECA_ProcessRequest(uint8_t *rx_buffer, uint8_t is_single_frame) {
     case 0x01: // Request Seed
         if (data_len != 2) {
             response_data[0] = NRC;
-            response_data[1] = SESSION_SID;
+            response_data[1] = uds_data[0];  // Use original service ID instead of SESSION_SID
             response_data[2] = INVALID_LENGTH_RESPONSE_CODE;
             response_len = 3;
         } else {
@@ -57,20 +57,18 @@ void DCM_SECA_ProcessRequest(uint8_t *rx_buffer, uint8_t is_single_frame) {
     case 0x02: // Send Key
         if (data_len != 8) {
             response_data[0] = NRC;
-            response_data[1] = SESSION_SID;
+            response_data[1] = uds_data[0];  // Use original service ID instead of SESSION_SID
             response_data[2] = INVALID_LENGTH_RESPONSE_CODE;
             response_len = 3;
         } else if (!compare_key(KEY, &uds_data[2], 6)) {
-            response_data[0] = NRC;
-            response_data[1] = SESSION_SID;
-            response_data[2] = WRONG_KEY_RESPONSE_CODE;
+            response_data[0] = NRC;                    // 0x7F
+            response_data[1] = uds_data[0];            // 0x27 (original service ID)
+            response_data[2] = WRONG_KEY_RESPONSE_CODE; // 0x35
             response_len = 3;
         } else if (SeedProvided && !SecurityUnlocked) {
             HAL_TIM_Base_Start_IT(&htim3);
             SecurityUnlocked = 1;
             HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
-
-            USART3_SendString((uint8_t*) "Session Unlocked\n");
 
             response_data[0] = uds_data[0] + 0x40; // Positive response
             response_data[1] = 0x02;
@@ -83,7 +81,7 @@ void DCM_SECA_ProcessRequest(uint8_t *rx_buffer, uint8_t is_single_frame) {
         
     default:
         response_data[0] = NRC;
-        response_data[1] = SESSION_SID;
+        response_data[1] = uds_data[0];  // Use original service ID instead of SESSION_SID
         response_data[2] = INVALID_LENGTH_RESPONSE_CODE;
         response_len = 3;
         break;
@@ -93,7 +91,8 @@ void DCM_SECA_ProcessRequest(uint8_t *rx_buffer, uint8_t is_single_frame) {
     if (response_len <= 7) {
         iso_tp_send_sf(response_data, response_len);
     } else {
-        iso_tp_send_ff(response_data, response_len);
+        // Use auto-send for ECU responses (no Flow Control wait)
+        iso_tp_send_response_auto(response_data, response_len);
     }
 }
 

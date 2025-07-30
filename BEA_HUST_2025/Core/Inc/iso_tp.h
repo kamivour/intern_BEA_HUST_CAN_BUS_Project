@@ -14,14 +14,14 @@
 #define ISO_TP_PCI_FC 0x30   // Flow Control
 
 // Flow Control Status
-#define FC_CTS 0x00          // Continue To Send
+#define FC_CTS 0x00          // Clear To Send
 #define FC_WAIT 0x01         // Wait
 #define FC_OVFLW 0x02        // Overflow
 
-// ISO-TP timing parameters (in ms)
-#define ISO_TP_TIMEOUT_FC 10000   // 10 seconds timeout for Flow Control
-#define ISO_TP_TIMEOUT_CF 10000
-#define ISO_TP_ST_MIN 0x10      // Separation time minimum (16ms)
+// ISO-TP timing parameters (in ms) - Standard ISO 14229-2 timeouts
+#define ISO_TP_TIMEOUT_FC 1000    // N_As: Timeout for Flow Control reception (1s)
+#define ISO_TP_TIMEOUT_CF 1000    // N_Cr: Timeout for Consecutive Frame reception (1s)  
+#define ISO_TP_ST_MIN 0x00        // STmin: Separation time minimum (0ms for testing)
 
 // ISO-TP state enumeration
 typedef enum {
@@ -43,6 +43,7 @@ void iso_tp_handle_timeout(void);
 uint8_t iso_tp_get_data_length(uint8_t *buffer, uint16_t *total_len);
 void iso_tp_timer_update(void);
 void iso_tp_start_timer(uint32_t timeout_ms);
+void iso_tp_send_response_auto(uint8_t *data, uint16_t len);
 
 // External variables (defined in main.c)
 extern uint8_t CAN2_DATA_TX[8];

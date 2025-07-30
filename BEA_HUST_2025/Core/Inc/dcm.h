@@ -9,14 +9,16 @@
 #include "stm32f4xx_it.h"
 
 // UDS Service Response Codes
-#define INVALID_LENGTH_RESPONSE_CODE 0x13
-#define INVALID_DID_RESPONSE_CODE 0x31
+
 #define READ_SID 0x22
-#define WRITE_SID 0x2E
 #define SESSION_SID 0x27
+#define WRITE_SID 0x2E
+
 #define NRC 0x7F
 #define ACCESS_DENIED_CODE 0x33
 #define WRONG_KEY_RESPONSE_CODE 0x35
+#define INVALID_LENGTH_RESPONSE_CODE 0x13
+#define INVALID_DID_RESPONSE_CODE 0x31
 #define GENERAL_REJECT 0x10
 
 // DCM function prototypes

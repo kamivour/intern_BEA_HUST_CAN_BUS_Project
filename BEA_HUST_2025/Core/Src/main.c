@@ -79,7 +79,7 @@ unsigned int TimeStamp;
 volatile uint8_t SecurityUnlocked = 0;
 uint8_t SeedProvided = 0;
 uint32_t newStdID;
-uint16_t AVAILABLE_SERVICE = 0x1122;  // Data Identifier that can be changed by service 0x2E
+uint16_t AVAILABLE_SERVICE = 0x0123;  // Data Identifier
 // ISO-TP variables
 uint16_t iso_tp_rx_len;             // Expected total length for RX (used by DCM modules)
 
@@ -98,6 +98,7 @@ static void MX_TIM3_Init(void);
 void MX_CAN1_Setup();
 void MX_CAN2_Setup();
 void USART3_SendString(uint8_t *ch);
+void send_uds_request_via_can1(uint8_t *uds_data, uint16_t length);
 void PrintCANLog(uint16_t CANID, uint8_t *CAN_Frame);
 void delay(uint16_t delay);
 void read_from_buffer(uint8_t *req_buffer, uint16_t len, uint8_t *data_tx);
@@ -168,27 +169,25 @@ int main(void) {
 		// Update ISO-TP timer
 		iso_tp_timer_update();
 		
+		// Check if CAN1 received a response (non-Flow Control) for display
+		if (check == 1) {
+			USART3_SendString((uint8_t*) "Response: ");
+			PrintCANLog(CAN1_pHeaderRx.StdId, CAN1_DATA_RX);
+			check = 0;
+		}
+		
 		if (NumBytesReq != 0) {
 			delay(100);
-			read_from_buffer(REQ_BUFFER, NumBytesReq, CAN1_DATA_TX);
-			CAN1_Send();
-			delay(100);
-			if (check == 2) {
-				// Process received CAN data through ISO-TP
-				iso_tp_process_rx(CAN2_DATA_RX);
-			}
-			if (check == 1) {
-				// Check if CAN1 data is Flow Control frame
-				uint8_t pci = CAN1_DATA_RX[0] & 0xF0;
-				if (pci == ISO_TP_PCI_FC) {
-					// Process Flow Control from tester
-					iso_tp_process_rx(CAN1_DATA_RX);
-				}
-				USART3_SendString((uint8_t*) "Response: ");
-				PrintCANLog(CAN1_pHeaderRx.StdId, CAN1_DATA_RX);
-				check = 0;
-			}
+			
+			// Convert raw UDS data to ISO-TP frames
+			// User sends: "27 01" → Program creates: "02 27 01"
+			send_uds_request_via_can1(REQ_BUFFER, NumBytesReq);
+			
+			// Clear buffer after processing
+			memset(REQ_BUFFER, 0, sizeof(REQ_BUFFER));
 			NumBytesReq = 0;
+			
+			delay(100);
 		}
 		if (!BtnU) /*IG OFF->ON stimulation*/
 		{
@@ -506,6 +505,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 void delay(uint16_t delay) {
 	HAL_Delay(delay);
 }
+
+// Correct calculated key for SEED {0x01, 0x08, 0x82, 0x21, 0xAB, 0xCD} is: {0x09, 0x8A, 0xA3, 0x22, 0xA0, 0x0D}
+// UART command: "27 02 09 8A A3 22 A0 0D"
 void calculate_key(uint8_t *input, uint8_t *output) {
 	output[0] = input[0] ^ input[1];
 	output[1] = input[1] + input[2];
@@ -513,6 +515,89 @@ void calculate_key(uint8_t *input, uint8_t *output) {
 	output[3] = input[3] + input[0];
 	output[4] = input[4] & 0xF0;
 	output[5] = input[5] & 0x0F;
+}
+
+// Function to send UDS request via CAN1 with proper ISO-TP framing
+void send_uds_request_via_can1(uint8_t *uds_data, uint16_t length) {
+	if (length == 0 || length > 4095) {
+		USART3_SendString((uint8_t*) "Invalid UDS data length\n");
+		return;
+	}
+	
+	// Print debug info
+	char debug_msg[100];
+	/*
+	sprintf(debug_msg, "UDS Request (%d bytes): ", length);
+	USART3_SendString((uint8_t*) debug_msg);
+	
+	for (int i = 0; i < length && i < 10; i++) {
+		sprintf(debug_msg, "%02X ", uds_data[i]);
+		USART3_SendString((uint8_t*) debug_msg);
+	}
+	USART3_SendString((uint8_t*) "\n");
+	*/
+	
+	if (length <= 7) {
+		// Single Frame: First byte = 0x0L (L = length)
+		CAN1_DATA_TX[0] = 0x00 | length; // Single Frame PCI + length
+		memcpy(&CAN1_DATA_TX[1], uds_data, length);
+		
+		// Pad remaining bytes
+		for (int i = length + 1; i < 8; i++) {
+			CAN1_DATA_TX[i] = 0x55;
+		}
+		
+		//sprintf(debug_msg, "Sending Single Frame: ");
+		//USART3_SendString((uint8_t*) debug_msg);
+		//PrintCANLog(CAN1_pHeader.StdId, CAN1_DATA_TX);
+
+		USART3_SendString((uint8_t*) "Request: ");
+		CAN1_Send();
+	} else {
+		// Multi-Frame: First Frame + Consecutive Frames
+		// First Frame: 1L LL DD DD DD DD DD DD (L LL = 12-bit length)
+		CAN1_DATA_TX[0] = 0x10 | ((length >> 8) & 0x0F); // FF PCI + high nibble of length
+		CAN1_DATA_TX[1] = length & 0xFF; // Low byte of length
+		memcpy(&CAN1_DATA_TX[2], uds_data, 6); // First 6 bytes of data
+		
+		sprintf(debug_msg, "Sending First Frame: ");
+		USART3_SendString((uint8_t*) debug_msg);
+		PrintCANLog(CAN1_pHeader.StdId, CAN1_DATA_TX);
+		
+		CAN1_Send();
+		
+		// Wait for Flow Control (in a real implementation, this should be event-driven)
+		delay(100);
+		
+		// Send Consecutive Frames
+		uint16_t sent_bytes = 6;
+		uint8_t sequence_number = 1;
+		
+		while (sent_bytes < length) {
+			uint8_t remaining = length - sent_bytes;
+			uint8_t to_send = (remaining > 7) ? 7 : remaining;
+			
+			CAN1_DATA_TX[0] = 0x20 | (sequence_number & 0x0F); // CF PCI + sequence number
+			memcpy(&CAN1_DATA_TX[1], &uds_data[sent_bytes], to_send);
+			
+			// Pad remaining bytes
+			for (int i = to_send + 1; i < 8; i++) {
+				CAN1_DATA_TX[i] = 0x55;
+			}
+			
+			sprintf(debug_msg, "Sending Consecutive Frame %d: ", sequence_number);
+			USART3_SendString((uint8_t*) debug_msg);
+			PrintCANLog(CAN1_pHeader.StdId, CAN1_DATA_TX);
+			
+			CAN1_Send();
+			
+			sent_bytes += to_send;
+			sequence_number++;
+			if (sequence_number > 15) sequence_number = 0; // Wrap around
+			
+			delay(50); // Small delay between frames
+		}
+	}
 }
 uint8_t compare_key(uint8_t *array1, uint8_t *array2, uint8_t length) {
 	for (uint8_t i = 0; i < length; i++) {
@@ -531,7 +616,16 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 		if (ret != HAL_OK) {
 			Error_Handler();
 		}
-		check = 1;
+		
+		// Process CAN1 frames immediately in interrupt
+		uint8_t pci = CAN1_DATA_RX[0] & 0xF0;
+		if (pci == ISO_TP_PCI_FC) {
+			// Process Flow Control from ECU
+			iso_tp_process_rx(CAN1_DATA_RX);
+		} else {
+			// Set flag for main loop to handle response display
+			check = 1;
+		}
 		return;
 	}
 	if (hcan == &hcan2) {
@@ -540,7 +634,9 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 		if (ret != HAL_OK) {
 			Error_Handler();
 		}
-		check = 2;
+		
+		// Process CAN2 frames immediately in interrupt
+		iso_tp_process_rx(CAN2_DATA_RX);
 		return;
 	}
 }
@@ -555,15 +651,15 @@ void CAN1_Send() {
 
 void CAN1CommSetup() {
 	CAN1_pHeader.IDE = CAN_ID_STD;
-	CAN1_pHeader.StdId = 0x012;
+	CAN1_pHeader.StdId = 0x712;
 	CAN1_pHeader.RTR = CAN_RTR_DATA;
 	CAN1_pHeader.DLC = 8;
 	CAN1_sFilterConfig.FilterActivation = CAN_FILTER_ENABLE;
 	CAN1_sFilterConfig.FilterBank = 14;
 	CAN1_sFilterConfig.FilterFIFOAssignment = CAN_FILTER_FIFO0;
-	CAN1_sFilterConfig.FilterIdHigh = 0x0A2 << 5;
+	CAN1_sFilterConfig.FilterIdHigh = 0x7A2 << 5;
 	CAN1_sFilterConfig.FilterIdLow = 0;
-	CAN1_sFilterConfig.FilterMaskIdHigh = 0x0A2 << 5;
+	CAN1_sFilterConfig.FilterMaskIdHigh = 0x7A2 << 5;
 	CAN1_sFilterConfig.FilterMaskIdLow = 0;
 	CAN1_sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
 	CAN1_sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
@@ -581,7 +677,7 @@ void CAN2_Send() {
 
 void CAN2CommSetup() {
 	CAN2_pHeader.IDE = CAN_ID_STD;
-	CAN2_pHeader.StdId = 0x0A2;
+	CAN2_pHeader.StdId = 0x7A2;
 	CAN2_pHeader.RTR = CAN_RTR_DATA;
 	CAN2_pHeader.DLC = 8;
 	CAN2_sFilterConfig.FilterActivation = CAN_FILTER_ENABLE;

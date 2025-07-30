@@ -63,8 +63,8 @@ all: main-build
 main-build: BEA_HUST_2025.elf secondary-outputs
 
 # Tool invocations
-BEA_HUST_2025.elf BEA_HUST_2025.map: $(OBJS) $(USER_OBJS) /home/edabk/_kamivour/Code/bosch_bea/BOSCH_PRATCICE_UDS/BEA_CAN2CAN_DEMO_TEN1HC_HUST/STM32F405RGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "BEA_HUST_2025.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"/home/edabk/_kamivour/Code/bosch_bea/BOSCH_PRATCICE_UDS/BEA_CAN2CAN_DEMO_TEN1HC_HUST/STM32F405RGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="BEA_HUST_2025.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+BEA_HUST_2025.elf BEA_HUST_2025.map: $(OBJS) $(USER_OBJS) /home/kamivour/_kamivour/Code/INTERNSHIP/intern_BEA_HUST_CAN_BUS_Project/BEA_HUST_2025/STM32F405RGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "BEA_HUST_2025.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"/home/kamivour/_kamivour/Code/INTERNSHIP/intern_BEA_HUST_CAN_BUS_Project/BEA_HUST_2025/STM32F405RGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="BEA_HUST_2025.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
